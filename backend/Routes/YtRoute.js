@@ -6,7 +6,7 @@ const router = express.Router();
 router.get('/login' , async(req,res) => {
      try {
         return res.status(200).json({
-            message : "Inside login"
+            message : "Inside login....."
         })
     } catch (error) {
          return res.status(500).json({
@@ -15,10 +15,13 @@ router.get('/login' , async(req,res) => {
      }
 });
 
-
 router.get('/auth/youtube' , async(req,res,next)   => {
+
+    const Scope = "https://www.googleapis.com/auth/youtube.force-ssl"
+    //  "https://www.googleapis.com/auth/youtube" , 
+
    try {
-    const Authurls = `${process.env.AUTH_URL}?client_id=${process.env.CLIENT_ID}&redirect_uri=${process.env.Redirect_uri}&response_type=code&scope=${process.env.Scope}&access_type=offline&prompt=consent`;
+    const Authurls = `${process.env.AUTH_URL}?client_id=${process.env.CLIENT_ID}&redirect_uri=${process.env.Redirect_uri}&response_type=code&scope=${Scope}&access_type=offline&prompt=consent`;
 
         console.log('Auth url is -',Authurls);
         res.json({  url : Authurls })
@@ -100,18 +103,15 @@ router.get('/videoid' , async(req,res) => {
      }
 })
 
-// change title
-// change desc
-
 router.put('/content' , async(req,res,next) => {
      try {
 
-         const NewTitle = "Updating Tiger Title";
-         const NewDesc  = "Updating Desc to new tiger";
+         const NewTitle = "New tiger in the house ";
+         const NewDesc  = "This is the plaxe in viena Africa";
 
         const videoid = 'C9Ha9aRvJaA';
         // dummy Accesstoken
-        const Accesstoken = 'ya29....'
+          const Accesstoken = 'ya29....'
 
          const UpdatedContent = await axios.put(`${process.env.MAIN_URL}/videos`,{
                 "id": videoid,
@@ -138,12 +138,95 @@ router.put('/content' , async(req,res,next) => {
              message : " Video  Content updates "
          })
      } catch (error) {
+        console.log('content update error =',error);
           return res.status(500).json({
              message : " Unable to update contents "
          })
      }
 })
 
+
+router.get('/allcomments' , async(req,res,next) => {
+     try {
+
+        const videoid = 'C9Ha9aRvJaA';
+        const Accesstoken = 'ya29.....'
+
+        const Response = await axios.get(`${process.env.MAIN_URL}/commentThreads`,{
+            params : {
+                part : 'snippet,replies',
+                videoId :   videoid,
+                key : process.env.API_KEY
+            },
+            headers : {
+                'Content-Type' : 'application/json',
+                'Authorization' : `Bearer ${Accesstoken}`
+            }
+        })
+
+        const AllComments = Response?.data?.items;
+        
+        const CommentItemArr = AllComments.map(i => i?.snippet?.topLevelComment?.snippet?.textDisplay);
+        console.log('Response comments arr =',CommentItemArr);
+
+        return res.status(200).json({
+             comments : CommentItemArr,
+             message : " Fetched all Comments "
+         })
+
+     } catch (error) {
+        console.log(' comments error =',error);
+          return res.status(500).json({
+             message : " Unable to update contents "
+         })
+     }
+})
+
+router.post('/newcomment' , async(req,res) => {
+    try {
+        const newText = 'enjoy the scene';
+
+        const Accesstoken = 'ya29.....';
+
+         const videoid = 'C9Ha9aRvJaA';
+
+        const Response = await axios.post(`${process.env.MAIN_URL}/commentThreads`,
+            {
+            snippet : {
+                "channelId" : "22",
+                "videoId"   : videoid,
+                "topLevelComment" : {
+                    "snippet" :  {
+                        "textOriginal" : newText
+                    }
+                }
+            }
+          },{
+               params : {
+                part : 'snippet,replies,snippet',
+                id :   videoid,
+                key : process.env.API_KEY
+            },
+            headers : {
+                'Content-Type' : 'application/json',
+                 'Authorization' : `Bearer ${Accesstoken}`
+            }}
+        )
+
+        console.log('Response =',Response?.data);
+
+        return res.status(200).json({
+             message : " Video  Content updates "
+         })
+
+     } catch (error) {
+        console.log(' new comment error =',error);
+          return res.status(500).json({
+             message : " Unable to update contents "
+         })
+    }
+
+})
 
 export default router;
 
