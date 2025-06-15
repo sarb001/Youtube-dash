@@ -46,7 +46,8 @@ router.get('/callbackurl' , async(req,res,next) => {
         }, { headers : { 'Content-Type' : 'application/json' }})
   
         const { access_token , refresh_token } = Resp?.data;
-        console.log(' tokens are =',access_token , refresh_token);
+        console.log(' tokens are =',access_token);
+        console.log(' refresh_token are =', refresh_token);
 
         return res.status(200).json({
             message : "got the token"
@@ -62,9 +63,11 @@ router.get('/callbackurl' , async(req,res,next) => {
 router.get('/videoid' , async(req,res) => {
      try {
         const videoid = 'C9Ha9aRvJaA';
-        const Accesstoken = '';
 
-        const Response = await axios.get('/videos',{
+        // dummy Accesstoken
+        const Accesstoken = 'ya29....'
+
+        const Response = await axios.get(`${process.env.MAIN_URL}/videos`,{
             params : {
                 part : 'snippet,contentDetails,statistics',
                 id : videoid,
@@ -72,13 +75,22 @@ router.get('/videoid' , async(req,res) => {
             },
             headers : {
                 'Content-Type' : 'application/json',
-                 'Authorization' : `Bearer ${Accesstoken}`
+                'Authorization' : `Bearer ${Accesstoken}`
             }
         })
 
-        //  console.log('api-key  =',process.env.API_KEY);
+         console.log(' title = ',Response?.data?.items[0]?.snippet?.title);
+         console.log(' desc = ',Response?.data?.items[0]?.snippet?.description);
+         console.log(' channel id = ',Response?.data?.items[0]?.snippet?.channelId);
+         console.log(' category id = ',Response?.data?.items[0]?.snippet?.categoryId);
 
         return res.status(200).json({
+            videoDetails : {
+                title : Response?.data?.items[0]?.snippet?.title,
+                desc : Response?.data?.items[0]?.snippet?.description,
+                channelid : Response?.data?.items[0]?.snippet?.channelId,
+                categoryId : Response?.data?.items[0]?.snippet?.categoryId
+            },
             message : " Fetched video details "
         })
     } catch (error) {
@@ -87,6 +99,51 @@ router.get('/videoid' , async(req,res) => {
          })
      }
 })
+
+// change title
+// change desc
+
+router.put('/content' , async(req,res,next) => {
+     try {
+
+         const NewTitle = "Updating Tiger Title";
+         const NewDesc  = "Updating Desc to new tiger";
+
+        const videoid = 'C9Ha9aRvJaA';
+        // dummy Accesstoken
+        const Accesstoken = 'ya29....'
+
+         const UpdatedContent = await axios.put(`${process.env.MAIN_URL}/videos`,{
+                "id": videoid,
+                "snippet": {
+                    "title": NewTitle,
+                    "description" : NewDesc,
+                    "categoryId": "22"
+                }
+         },{
+               params : {
+                part : 'snippet,contentDetails,statistics',
+                id :   videoid,
+                key : process.env.API_KEY
+            },
+            headers : {
+                'Content-Type' : 'application/json',
+                 'Authorization' : `Bearer ${Accesstoken}`
+            }
+         })
+
+        console.log('updated content =',UpdatedContent?.data);
+
+        return res.status(200).json({
+             message : " Video  Content updates "
+         })
+     } catch (error) {
+          return res.status(500).json({
+             message : " Unable to update contents "
+         })
+     }
+})
+
 
 export default router;
 
