@@ -15,16 +15,16 @@ router.get('/login' , async(req,res) => {
      }
 });
 
+
 router.get('/auth/youtube' , async(req,res,next)   => {
 
-    const Scope = "https://www.googleapis.com/auth/youtube.force-ssl"
-    //  "https://www.googleapis.com/auth/youtube" , 
+    const Scope = "https://www.googleapis.com/auth/youtube.force-ssl" ;
 
    try {
     const Authurls = `${process.env.AUTH_URL}?client_id=${process.env.CLIENT_ID}&redirect_uri=${process.env.Redirect_uri}&response_type=code&scope=${Scope}&access_type=offline&prompt=consent`;
 
         console.log('Auth url is -',Authurls);
-        res.json({  url : Authurls })
+        res.redirect(Authurls);
 
    } catch (error) {
      console.log('error =',error);
@@ -52,9 +52,7 @@ router.get('/callbackurl' , async(req,res,next) => {
         console.log(' tokens are =',access_token);
         console.log(' refresh_token are =', refresh_token);
 
-        return res.status(200).json({
-            message : "got the token"
-        })
+        res.redirect(`http://localhost:5173/dashboard?accesstoken=${access_token}&refreshtoken=${refresh_token}`);
         
     } catch (error) {
         return res.status(500).json({
@@ -63,12 +61,55 @@ router.get('/callbackurl' , async(req,res,next) => {
      }
 })
 
+router.get('/mychannel' , async(req,res) => {
+     try {
+        const Accesstoken = req?.headers?.authorization?.split(' ')[1] || req?.headers?.Authorization?.split(' ')[1];
+        console.log('Acc token -',Accesstoken);
+
+        if(!Accesstoken){
+            return res.status(401).json({
+                message : "UnAuthorized Request"
+            })
+        }
+
+         const Resp = await axios.get(`${process.env.MAIN_URL}/channels`,{
+            params : {
+                part : 'snippet,contentDetails,statistics',
+                 key : process.env.API_KEY,
+                 mine : true,
+            },headers : {
+                'Content-Type' : 'application/json',
+                'Authorization' : `Bearer ${Accesstoken}`
+            }
+        });
+
+        const channelId = Resp?.data?.items[0]?.id;
+        console.log('Channel Details =',channelId)
+
+        return res.status(200).json({
+            channelid : channelId,
+            message : " Fecthed channel detailss "
+        })
+
+     } catch (error) {
+        console.log(' channel error =',error);
+        return res.status(500).json({
+            message : "My channel fetch error "
+        })
+     }
+})
+
 router.get('/videoid' , async(req,res) => {
      try {
         const videoid = 'C9Ha9aRvJaA';
+        const Accesstoken = req?.headers?.authorization?.split(' ')[1] || req?.headers?.Authorization?.split(' ')[1];
+        console.log('Acc token -',Accesstoken);
 
-        // dummy Accesstoken
-        const Accesstoken = 'ya29....'
+        if(!Accesstoken){
+            return res.status(401).json({
+                message : "UnAuthorized Request"
+            })
+        }
 
         const Response = await axios.get(`${process.env.MAIN_URL}/videos`,{
             params : {
@@ -81,14 +122,13 @@ router.get('/videoid' , async(req,res) => {
                 'Authorization' : `Bearer ${Accesstoken}`
             }
         })
+        
+        const Imageurl = Response?.data?.items[0]?.snippet?.thumbnails?.high?.url ;
+        // console.log('video resp =',Imageurl);
 
-         console.log(' title = ',Response?.data?.items[0]?.snippet?.title);
-         console.log(' desc = ',Response?.data?.items[0]?.snippet?.description);
-         console.log(' channel id = ',Response?.data?.items[0]?.snippet?.channelId);
-         console.log(' category id = ',Response?.data?.items[0]?.snippet?.categoryId);
-
-        return res.status(200).json({
+        return res.status(200).json({                                                     
             videoDetails : {
+                Imgurl : Imageurl,
                 title : Response?.data?.items[0]?.snippet?.title,
                 desc : Response?.data?.items[0]?.snippet?.description,
                 channelid : Response?.data?.items[0]?.snippet?.channelId,
@@ -137,6 +177,7 @@ router.put('/content' , async(req,res,next) => {
         return res.status(200).json({
              message : " Video  Content updates "
          })
+
      } catch (error) {
         console.log('content update error =',error);
           return res.status(500).json({
@@ -144,7 +185,6 @@ router.put('/content' , async(req,res,next) => {
          })
      }
 })
-
 
 router.get('/allcomments' , async(req,res,next) => {
      try {
