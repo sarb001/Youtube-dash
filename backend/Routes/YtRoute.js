@@ -15,7 +15,6 @@ router.get('/login' , async(req,res) => {
      }
 });
 
-
 router.get('/auth/youtube' , async(req,res,next)   => {
 
     const Scope = "https://www.googleapis.com/auth/youtube.force-ssl" ;
@@ -146,18 +145,26 @@ router.get('/videoid' , async(req,res) => {
 router.put('/content' , async(req,res,next) => {
      try {
 
-         const NewTitle = "New tiger in the house ";
-         const NewDesc  = "This is the plaxe in viena Africa";
+        const Accesstoken = req?.headers?.authorization?.split(' ')[1] || req?.headers?.Authorization?.split(' ')[1];
+        console.log('Acc token -',Accesstoken);
+
+        if(!Accesstoken){
+            return res.status(401).json({
+                message : "UnAuthorized Request"
+            })
+        }
+
+        const { title  , desc } = req.body ;
+        console.log('req body is =',{ title  , desc });
 
         const videoid = 'C9Ha9aRvJaA';
         // dummy Accesstoken
-          const Accesstoken = 'ya29....'
 
          const UpdatedContent = await axios.put(`${process.env.MAIN_URL}/videos`,{
                 "id": videoid,
                 "snippet": {
-                    "title": NewTitle,
-                    "description" : NewDesc,
+                    "title": title,
+                    "description" : desc,
                     "categoryId": "22"
                 }
          },{
@@ -172,11 +179,15 @@ router.put('/content' , async(req,res,next) => {
             }
          })
 
-        console.log('updated content =',UpdatedContent?.data);
-
-        return res.status(200).json({
-             message : " Video  Content updates "
-         })
+          if(UpdatedContent.status === 200){
+              return res.status(200).json({
+                   message : " Video  Content updates "
+               })
+          }else{
+              return res.status(500).json({
+                   message : " Content updation Failed "
+               })
+          }
 
      } catch (error) {
         console.log('content update error =',error);
