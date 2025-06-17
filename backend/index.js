@@ -2,11 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import router from './Routes/YtRoute.js';
 const app = express();
-import dotenv from 'dotenv'
-
+import dotenv from 'dotenv';
+import { dbconnection } from './Db/db.js';
 dotenv.config();
 
 app.use(express.json());
+
+dbconnection();
 
 app.use(cors({
     origin : 'http://localhost:5173',

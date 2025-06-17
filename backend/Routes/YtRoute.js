@@ -1,14 +1,19 @@
 import express from 'express'
 import axios from 'axios';
+import loggerfn from '../loggerfn.js';
 
 const router = express.Router();
 
 router.get('/login' , async(req,res) => {
      try {
-        return res.status(200).json({
+        
+         await loggerfn({ type : "LOGIN" , message : "User loggedin" })
+
+         return res.status(200).json({
             message : "Inside login....."
-        })
+         })
     } catch (error) {
+        await loggerfn({ type : "ERROR" , message : "Login failed" })
          return res.status(500).json({
              message : "Login error "
          })
@@ -22,11 +27,16 @@ router.get('/auth/youtube' , async(req,res,next)   => {
    try {
     const Authurls = `${process.env.AUTH_URL}?client_id=${process.env.CLIENT_ID}&redirect_uri=${process.env.Redirect_uri}&response_type=code&scope=${Scope}&access_type=offline&prompt=consent`;
 
+    await loggerfn({ type : "AUTH" , message : "Authorizing youtube" });
+
         console.log('Auth url is -',Authurls);
         res.redirect(Authurls);
 
    } catch (error) {
      console.log('error =',error);
+
+     await loggerfn({ type : "ERROR" , message : "Authorizing failed" });
+
       return res.status(500).json({
         message : "Rdirection failed"
       })
@@ -48,12 +58,14 @@ router.get('/callbackurl' , async(req,res,next) => {
         }, { headers : { 'Content-Type' : 'application/json' }})
   
         const { access_token , refresh_token } = Resp?.data;
+        await loggerfn({ type : "TOKENS" , message : " Recieved  tokens " });
         console.log(' tokens are =',access_token);
         console.log(' refresh_token are =', refresh_token);
 
         res.redirect(`http://localhost:5173/dashboard?accesstoken=${access_token}&refreshtoken=${refresh_token}`);
         
     } catch (error) {
+        await loggerfn({ type : "ERROR" , message : "Tokens Fetching failed" });
         return res.status(500).json({
             message : "token fetch error "
         })
